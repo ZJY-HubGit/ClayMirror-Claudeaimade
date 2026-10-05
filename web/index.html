@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#14101f">
+<title>橡皮泥魔镜 ClayMirror</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6c13 0 26 9 26 24S47 58 31 58 6 47 6 32 19 6 32 6z' fill='%23ff6fb5'/%3E%3Ccircle cx='24' cy='28' r='5' fill='%23fff'/%3E%3Ccircle cx='42' cy='26' r='7' fill='%23fff'/%3E%3Ccircle cx='24' cy='28' r='2.5' fill='%23241a3a'/%3E%3Ccircle cx='43' cy='27' r='3.5' fill='%23241a3a'/%3E%3Cpath d='M22 42q10 8 20 0' stroke='%23241a3a' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <canvas id="overlay"></canvas>
+  <video id="video" playsinline muted autoplay></video>
+</div>
+
+<header id="hud-top" class="hud hidden">
+  <div class="brand"><span class="blob"></span><b>橡皮泥魔镜</b></div>
+  <button id="badge" class="badge" title="计算设备 / 性能">…</button>
+  <div class="spacer"></div>
+  <nav class="toolbar">
+    <button data-act="undo" title="撤销 (Z)"><i>↶</i><span>撤销</span></button>
+    <button data-act="reset" title="全部复原 (R)"><i>⟲</i><span>复原</span></button>
+    <button data-act="mode" title="捏住不动时：放大 / 缩小 (X)"><i id="mode-icon">🎈</i><span id="mode-label">放大</span></button>
+    <button data-act="snap" title="拍照保存 (S)"><i>📸</i><span>拍照</span></button>
+    <button data-act="debug" title="显示识别结果 (D)"><i>🦴</i><span>识别</span></button>
+    <button data-act="camera" title="切换摄像头 (C)"><i>🔄</i><span>镜头</span></button>
+    <button data-act="phone" title="用手机玩"><i>📱</i><span>手机</span></button>
+    <button data-act="sound" title="声音 (M)"><i id="sound-icon">🔊</i><span>声音</span></button>
+    <button data-act="help" title="玩法 (H)"><i>❓</i><span>玩法</span></button>
+  </nav>
+</header>
+
+<footer id="hud-bottom" class="hud hidden">
+  <div id="chips" class="chips"></div>
+  <div id="hint" class="hint"></div>
+  <div id="perf" class="perf"></div>
+</footer>
+
+<section id="start" class="modal show">
+  <div class="card start-card">
+    <div class="logo"><span class="blob big"></span></div>
+    <h1>橡皮泥魔镜</h1>
+    <p class="tag">用手指捏住画面里的自己，像捏橡皮泥一样<b>拉长</b>、<b>吹大</b>、<b>挤扁</b>！</p>
+    <div class="moves">
+      <div><em>🤏↔️</em><b>捏住拖动</b><span>拉长 · 拉宽</span></div>
+      <div><em>🤏⏳</em><b>捏住不动</b><span>吹气放大</span></div>
+      <div><em>🤏🤏</em><b>双手捏住拉开</b><span>两边拉伸</span></div>
+    </div>
+    <div id="engine-status" class="engine-status"><span class="spinner"></span><span id="engine-text">正在寻找 Intel NPU …</span></div>
+    <div id="engine-log" class="engine-log"></div>
+    <button id="btn-start" class="primary" disabled>📷 打开摄像头开始</button>
+    <div id="cam-error" class="error"></div>
+    <p class="small">画面只在你的设备上处理，不会上传到任何地方。</p>
+  </div>
+</section>
+
+<section id="help" class="modal">
+  <div class="card help-card">
+    <button class="close" data-close>✕</button>
+    <h2>怎么玩</h2>
+    <div class="grid">
+      <div class="tip"><em>🤏➡️</em><h3>捏住 + 拖动 = 拉扯</h3><p>拇指和食指捏住画面里的部位再移动：下巴往下拉→长脸，脸颊往外拉→宽脸，鼻尖往前拉→长鼻子，指尖往外拉→长手指。</p></div>
+      <div class="tip"><em>🤏⏳</em><h3>捏住 + 不动 = 吹大</h3><p>捏住眼睛、鼻子、嘴巴或头，停住不动，它会像气球一样慢慢变大；松手就保留。点 🎈 可切换成缩小。</p></div>
+      <div class="tip"><em>🤏🤏</em><h3>双手捏住 = 拉伸</h3><p>两只手捏住同一个部位（比如两边脸颊、嘴角），往外拉开就拉伸，合拢就挤扁，转动就扭一扭。</p></div>
+      <div class="tip"><em>🧱</em><h3>松手会保留</h3><p>每次变形都会“粘”在身体上跟着你动，可以继续捏别的地方叠加效果。</p></div>
+      <div class="tip"><em>🖐️🖐️</em><h3>双手张开 = 复原</h3><p>两只手张开对着镜头停 2 秒，全部恢复原样。也可以点 ⟲ 复原、↶ 撤销。</p></div>
+      <div class="tip"><em>🖱️👆</em><h3>鼠标 / 触屏也能玩</h3><p>按住拖动=拉扯，按住不动=吹大，滚轮=放大缩小，手机上两根手指=拉伸。</p></div>
+    </div>
+    <p class="keys">快捷键：<kbd>Z</kbd> 撤销 · <kbd>R</kbd> 复原 · <kbd>S</kbd> 拍照 · <kbd>X</kbd> 放大/缩小 · <kbd>D</kbd> 识别显示 · <kbd>C</kbd> 换镜头 · <kbd>M</kbd> 声音 · <kbd>H</kbd> 玩法</p>
+    <p class="small">小技巧：手离镜头半米到一米、光线充足时识别最稳。捏的时候让拇指和食指的指尖碰在一起。</p>
+  </div>
+</section>
+
+<section id="panel" class="modal">
+  <div class="card panel-card">
+    <button class="close" data-close>✕</button>
+    <h2>⚡ 计算设备</h2>
+    <div id="panel-engine" class="panel-engine"></div>
+    <div class="row" id="policy-row">
+      <label for="policy">运行策略</label>
+      <select id="policy">
+        <option value="auto">自动：NPU 优先（推荐）</option>
+        <option value="NPU">只用 NPU</option>
+        <option value="GPU">只用 GPU</option>
+        <option value="CPU">只用 CPU</option>
+      </select>
+    </div>
+    <table class="models"><thead><tr><th>模型</th><th>设备</th><th>每次耗时</th></tr></thead><tbody id="model-rows"></tbody></table>
+    <div id="panel-notes" class="notes"></div>
+    <div class="row buttons">
+      <button id="btn-engine-switch" class="secondary">切换引擎</button>
+    </div>
+  </div>
+</section>
+
+<section id="phone" class="modal">
+  <div class="card phone-card">
+    <button class="close" data-close>✕</button>
+    <h2>📱 用手机摄像头玩</h2>
+    <div id="phone-body"></div>
+  </div>
+</section>
+
+<div id="toast"></div>
+<div id="flash"></div>
+<script src="vendor/qrcode.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

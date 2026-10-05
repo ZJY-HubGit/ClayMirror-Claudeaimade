@@ -1,0 +1,6 @@
+# ClayMirror local NPU service
+openvino>=2024.4      # Intel NPU / GPU / CPU inference (NPU plugin included)
+numpy
+aiohttp>=3.9          # web server + websocket
+pillow                # decode JPEG frames sent by phones
+cryptography          # self-signed https certificate for phone cameras
